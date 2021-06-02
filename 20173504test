@@ -1,0 +1,171 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+
+#define MAX_SIZE 100
+#define MAZE_SIZE 17
+#define CHARACTER 2
+#define GOAL 6
+#define WALL 1
+#define WAY 0
+
+using std::cout;
+using std::endl;
+
+typedef struct Point
+{
+	int x;
+	int y;
+}Point;
+
+typedef struct Stack
+{
+	Point data[MAX_SIZE];
+	int top;
+}Stack;
+
+int maze[MAZE_SIZE][MAZE_SIZE] = {
+{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+{ 1,1,1,1,1,1,1,1,0,1,1,1,1,0,0,0,1},
+{ 1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
+{ 1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,0,1},
+{ 1,1,0,1,0,0,0,0,1,0,0,0,0,0,1,0,1},
+{ 1,1,0,1,0,1,1,0,1,1,0,1,1,1,1,0,1},
+{ 1,1,0,1,0,1,1,0,1,1,0,1,1,0,1,0,1},
+{ 1,1,0,1,0,1,1,0,1,1,0,1,1,0,1,0,1},
+{ 1,1,0,1,0,1,1,1,1,1,0,0,0,0,1,0,1},
+{ 1,1,0,1,0,1,1,0,1,1,1,1,0,0,1,0,1},
+{ 1,1,0,1,0,0,0,0,1,1,0,0,0,0,1,0,1},
+{ 1,1,0,1,0,1,1,0,1,1,0,1,1,0,1,0,1},
+{ 1,1,0,1,0,1,1,0,1,1,0,1,1,0,1,0,1},
+{ 1,1,0,1,0,1,1,0,1,1,0,1,1,1,1,1,1},
+{ 1,1,0,1,0,1,1,0,0,0,0,1,0,0,0,6,1},
+{ 1,2,0,1,0,0,1,0,1,1,1,1,1,1,1,1,1},
+{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+};
+void init(Stack* p)
+{
+	p->top = -1;
+}
+int is_full(Stack* p)
+{
+	return (p->top == MAX_SIZE - 1);
+}
+
+int is_empty(Stack* p)
+{
+	return (p->top == -1);
+}
+
+void push(Stack* p, Point data)
+{
+	if (is_full(p))
+	{
+		cout << "스택이 꽉찼습니다" << endl;
+		return;
+	}
+	else
+	{
+		p->top++;
+		p->data[p->top].x = data.x;
+		p->data[p->top].y = data.y;
+	}
+}
+
+Point pop(Stack* p)
+{
+	if(is_empty(p))
+	{
+		printf("스택이 비어있습니다\n");
+		exit(1);
+	}
+
+	return p->data[(p->top)--];
+}
+
+void FindWay(Stack* s, int x, int y)
+{
+	if (x < 0 || y < 0 || x > MAZE_SIZE || y > MAZE_SIZE)
+		return;
+	if (maze[x][y] != '1' && maze[x][y] != '.')
+	{
+		Point tmp;
+		tmp.x = x;
+		tmp.y = y; push(s, tmp);
+	}
+}
+int main()
+{
+	Stack s;
+	Point m;
+	int i, j, x, y;
+	init(&s);
+
+	// 시작점 탐색 
+
+	for (i = 0;i < MAZE_SIZE;i++)
+	{
+		for (j = 0;j < MAZE_SIZE;j++)
+		{
+			if (maze[i][j] == CHARACTER)
+			{
+				m.x = i;
+				m.y = j;
+			}
+		}
+	}
+	cout << "미로" << endl;
+	for (int i = 0; i < MAZE_SIZE; i++)
+	{
+		for (int j = 0; j < MAZE_SIZE; j++)
+		{
+			if (maze[i][j] == WAY)
+			{
+				cout << "  ";
+			}
+			else if (maze[i][j] == WALL)
+			{
+				cout<<"■";
+			}
+			else if(maze[i][j] == CHARACTER)
+			{
+				cout << "★";
+			}
+			else if (maze[i][j] == GOAL)
+			{
+				cout << "☆";
+			}
+		}
+		cout << endl;
+	}
+	cout<<"이동 경로"<<endl;
+	cout << "시작 (" << m.x << "," << m.y << ")";
+
+	while (maze[m.x][m.y] != 6)
+	{
+		x = m.x;
+		y = m.y;
+		maze[x][y] = '.'; // 방문한 곳을 표시
+
+		// 이동 가능한 곳을 탐색
+		FindWay(&s, x + 1, y);
+		FindWay(&s, x - 1, y);
+		FindWay(&s, x, y + 1);
+		FindWay(&s, x, y - 1);
+
+		if (is_empty(&s))
+		{
+			cout<<"이동경로를 찾을 수 없습니다. 실패"<<endl;
+			return 0;
+		}
+		else
+		{
+			m = pop(&s); // 현재 좌표를 변경 
+			cout <<"(" <<m.x << "," << m.y<<")" << endl;
+		}
+	}
+	cout << "도착" << endl;
+	cout << "탐색성공" << endl;
+	return 0;
+}
+
