@@ -14,23 +14,33 @@ struct Location
 		_x = x;
 		_y = y;
 	}
+	bool isNeighbor(Location& p)
+	{
+		return ((_x == p._x && (_y == p._y - 1 || _y == p._y + 1)) || (_y == p._y && (_x == p._x - 1 || _x == p._x + 1)));
+	}
+	bool operator==(Location& p)
+	{
+		return _x == p._x && _y == p._y;
+	}
 };
 
-class Stack 
+template <typename T>
+class Stack
 {
-	int* dataArray;
+	T* dataArray;
 	int top;			// Stack에서 가장 마지막 데이터를 가르키는 index
 	int size; 			// 저장된 데이터의 수
 	int length;			// 저장 공간의 크기
 public:
-	Stack(int l = 255) : size(0), top(-1), length(l) { dataArray = new int[l](); }
+	Stack(int l = 255) : size(0), top(-1), length(l) { dataArray = new T[l](); }
 	~Stack() { delete[] dataArray; }
 	// Stack의 저장된 데이터를 제일 앞에 있는 데이터 부터 뒤에 있는 데이터 순으로 화면에 출력
 	friend ostream& operator<<(ostream& os, const Stack& s);     // Impl 1
 	bool isFull();     // Stack 의 저장 공간을 다 사용하고 있으면 true 아니면 flase 반환
 	bool isEmpty();    //  Stack 가 비어 있으면 true 아니면 false 반환
-	void push(int data);  // Stack에 데이터를 저장
-	int pop();    // Stack에 저장된 데이터 중 top이 가르키는 데이터를 반환
+	void push(T data);  // Stack에 데이터를 저장
+	T pop();    // Stack에 저장된 데이터 중 top이 가르키는 데이터를 반환
+	int getTop() { return top; }
 	int getLength() { return length; }
 	int getSize() { return size; }
 };
@@ -40,17 +50,18 @@ class Maze
 	int width;
 	int height;
 	int **map;
-	Stack mazeStack;
+	Stack<Location> mazeStack;
 	Location start;
 	Location exit;
 public:
-	Maze(int w = 0, int h = 0)
+	Maze(int w, int h, Location e)
 	{
 		width = w;
 		height = h;
-		map = new int*[w];
-		for (int i = 0; i < h; i++)
-			map[i] = new int[h];
+		start = (1, 1);
+		exit = e;
+
+		Init(w, h);
 	}
 	~Maze() 
 	{
@@ -60,23 +71,37 @@ public:
 		}
 		delete[] map;
 	}
-	void Load(char *custmap); // 미로 입력
+	void Init(int w, int h)
+	{
+		map = new int* [h];
+		for (int i = 0; i < h; i++)
+			map[i] = new int[w];
+	}
+	void Load(const char *custmap); // 미로 입력
+	bool isValid(int x, int y);
 	void Print(); // 미로를 화면에 출력
 	void Search(); // 미로의 출구를 탐색
+	void SetMap(int n, int arr[])
+	{
+		map[n] = arr;
+	}
 };
 
 Maze.cpp
 #include "Maze.h"
 
-bool Stack::isFull() {
+template <typename T>
+bool Stack<T>::isFull() {
 	return top >= length - 1;
 }
 
-bool Stack::isEmpty() {
+template <typename T>
+bool Stack<T>::isEmpty() {
 	return top == -1;
 }
 
-void Stack::push(int data) {
+template <typename T>
+void Stack<T>::push(T data) {
 	if (!isFull()) {
 		dataArray[++top] = data;
 		size++;
@@ -86,7 +111,8 @@ void Stack::push(int data) {
 	}
 }
 
-int Stack::pop() {
+template <typename T>
+T Stack<T>::pop() {
 	if (!isEmpty()) {
 		size--;
 		return dataArray[top--];
@@ -96,7 +122,8 @@ int Stack::pop() {
 	}
 }
 
-ostream& operator<<(ostream& os, const Stack& s) {
+template <typename T>
+ostream& operator<<(ostream& os, const Stack<T>& s) {
 	os << "Stack : [ ";
 	for (int i = 0; i <= s.top; i++)
 		os << s.dataArray[i] << " ";
@@ -105,9 +132,10 @@ ostream& operator<<(ostream& os, const Stack& s) {
 	return os;
 }
 
-void Maze::Load(char *custmap)
+void Maze::Load(const char *custmap)
 {
     ifstream fin(custmap, ios::in);
+
     int temp;
 
     for (int i = 0; i < height; i++)
@@ -116,10 +144,28 @@ void Maze::Load(char *custmap)
         {
             fin >> temp;
             map[i][j] = temp;
+            if (map[i][j] == 5)
+            {
+                Location entry(j, i);
+                mazeStack.push(entry);
+            }
+            else if (map[i][j] == 9)
+            {
+                exit._y = i;
+                exit._x = j;
+            }
         }
         cout << endl;
     }
     fin.close();
+}
+
+bool Maze::isValid(int x, int y)
+{
+    if (x < 0 || y < 0 || x >= 15 || y >= 15) //범위를 벗어나면 갈 수 없다
+        return false;
+    else //비어있는 통로나 도착지점일 때만 true
+        return (map[y][x] == 1 || map[y][x] == 9);
 }
 
 void Maze::Print() 
@@ -137,6 +183,10 @@ void Maze::Print()
             {
                 cout << "■";
             }
+            else if (map[i][j] == 7)
+            {
+                cout << "□";
+            }
             else if (map[i][j] == 5)
             {
                 cout << "○";
@@ -153,7 +203,42 @@ void Maze::Print()
 
 void Maze::Search()
 {
+    while (mazeStack.isEmpty() == false) //스택이 비어있지 않는 동안
+    {
+        Location here = mazeStack.getTop(); //스택에 상단 객체 복사
+        mazeStack.pop();
 
+        int x = here._x;
+        int y = here._y;
+
+        map[y][x] = 7;
+
+        if (exit._y == y && exit._x == x)
+        {
+            return;
+        }
+        else
+        {
+            map[y][x] = 7;
+
+            if (isValid(x - 1, y))
+            {
+                mazeStack.push(Location(x - 1, y));
+            }
+            if (isValid(x + 1, y))
+            {
+                mazeStack.push(Location(x + 1, y));
+            }
+            if (isValid(x, y - 1))
+            {
+                mazeStack.push(Location(x, y - 1));
+            }
+            if (isValid(x, y + 1))
+            {
+                mazeStack.push(Location(x, y + 1));
+            }
+        }
+    }
 }
 
 MazeTest.cpp
@@ -161,10 +246,17 @@ MazeTest.cpp
 
 int main()
 {
-	Maze maze(15, 15);
+	Maze maze1(15, 15, (14, 15));
+	maze1.Load("C:\\map1.txt");
+	maze1.Print();
+	maze1.Search();
+	maze1.Print();
 
-	maze.Load("C:\\Desktop\map1.txt");
-	maze.Print();
+	Maze maze2(6, 6, (4, 5));
+	maze2.Load("C:\\map2.txt");
+	maze2.Print();
+	maze2.Search();
+	maze2.Print();
 
 	return 0;
 }
