@@ -1,126 +1,208 @@
-//maze
-#include <iostream>
-#include <stack>
-using namespace std;
-const int MAXSIZE = 100;
-bool maze[MAXSIZE + 2][MAXSIZE + 2] = { 0 };	//
-bool mark[MAXSIZE + 1][MAXSIZE + 1] = { 0 };	//
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX 128
+#define ROW 8
+#define COL 17
 
-enum directions { N, NE, E, SE, S, SW, W, NW };	// enum 사용법
-struct offsets
+typedef struct {
+	int row;	// 세로 위치 (위, 아래)
+	int col;	// 가로 위치 (좌, 우)
+}location;
+
+int maze_runner(char maze[][COL]);
+location* new_location(int* w);
+location* push(location* way[], int* w, int row, int col);
+void pop(location* way[], int* w);
+int iswhat(char maze[][COL], int row, int col);
+int dir_check(char maze[][COL], location* a);
+void footstep(char maze[][COL], location* a);
+void backstep(char maze[][COL], location* a);
+void finalstep(char maze[][COL], location* a);
+void maze_print(char maze[][COL]);
+
+void main()
 {
-	int a, b;
-}m_ove[8] = { -1,0, -1,1, 0,1, 1,1, 1,0, 1,-1, 0,-1, -1,-1 };
+	/*미로 그림 만들기 */
+	char maze[][COL] =
+	{
+		"□□■□□□□□",
+		"□■■□■■■■",
+		"□■□□■□□□",
+		"□■□■■□■■",
+		"□□□□□□□□",
+		"■■■□□■■■",
+		"■■□□□■□□",
+		"□□□■□□□□",
+	};
 
-struct Items
+	if (maze_runner(maze) == 0)
+		puts("길이 없습니다...");
+
+	maze_print(maze);
+	printf("\n출구를 찾았습니다.\n");
+}
+int maze_runner(char maze[][COL])
 {
-	Items(int xx = 0, int yy = 0, int dd = 0) :x(xx), y(yy), dir(dd) {}
-	int x, y, dir;
-};
+	/* 지나간 길 저장할 스택(배열)과 저장갯수 */
+	static location* way[MAX] = { NULL };
+	static int w = 0;
 
-template<class T>
-ostream& operator<<(ostream& os, stack<T>& s) {
+	/* 북쪽부터 시계방향으로 돌림 (최대한 빨리 못찾게..) */
+	/* 현재 위치 저장 변수 */
+	location* a;
+	a = push(way, &w, 0, 0);  // 출발지 생성
+	int d = 0;  // 방향확인 후 return 받을 변수
 
-	stack<T> tmp;			// 저장할 stack 임시 생성
-	while (!s.empty()) {	// s의 stack을 temp로 옮기는 과정
-		tmp.push(s.top());	// temp에 넣고
-		s.pop();			// s거 pop
-	}
-	while (!tmp.empty()) {	// temp의 stack을 출력
-		os << "->";
-		os << tmp.top();	
-		tmp.pop();
-	}
-	return os;
-}
-
-ostream& operator<<(ostream& os, Items& item) {
-	static int count = 0;
-	os << "(" << item.x << "," << item.y << ")";
-	count++; if ((count % 5) == 0)os << endl; // 5개씩 끊기 무시
-	return os;
-}
-
-void Path(const int m, const int p) {
-	mark[1][1] = 1; // 출발 지점 1체크!
-	stack<Items>  istack;
-	Items temp(1, 1, E);	// 오른쪽부터 체크하기
-	istack.push(temp);
-
-	int node = 1; // 노드갯수 세기, 시작점 포함 1시작
-
-	while (!istack.empty()) {
-		temp = istack.top();	// 맨위 스택 저장하고
-		istack.pop();			// 삭제하기
-		int i = temp.x; int j = temp.y; int d = temp.dir;
-
-		while (d < 8) {
-			int g = i + m_ove[d].a; int h = j + m_ove[d].b;	// g,h 는 이동후 x,y 좌표
-			if ((g == m) && (h == p)) {
-				cout << istack;
-				node++;			// 도착한것도 노드 1 추가해주기
-				temp.x = i;  temp.y = j; cout << "->" << temp;
-				temp.x = m;  temp.y = p; cout << "->" << temp << endl;
-				cout << "방문한 노드수 = " << node << endl;
-				return;  // 프로그램 종료
-			}
-			if ((!maze[g][h]) && (!mark[g][h])) { // 둘다 0 이 아닌경우, 방문하지도 않았고, 지도상으로도 0인경우
-				mark[g][h] = 1;	// 방문해서 1
-				node++;			// 방문했으니 node++
-				temp.x = i; temp.y = j; temp.dir = d + 1; // 
-				istack.push(temp);		// 스택에 추가
-				i = g; j = h; d = N;	// (g,h) 로 이동
-			}
-			else d++; // 다음 방향으로 시도
-		}// while
-	}//while
-	cout << "길이 없습니다" << endl;
-}
-
-void getdata(istream& is, int& m, int& p) {
-	is >> m >> p;
-	for (int i = 0; i < m + 2; i++)
+	while (1)
 	{
-		maze[i][0] = 1; maze[i][p + 1] = 1;
-	}		// 왼쪽 벽과 오른쪽 벽 작성
-	for (int j = 1; j <= p; j++)
-	{
-		maze[0][j] = 1; maze[m + 1][j] = 1;
-	}		// 윗쪽 벽과 아래쪽 벽 작성
-	for (int i = 1; i <= m; i++) {
-		for (int j = 1; j <= p; j++)			// 자료 읽어들이기
-			is >> maze[i][j];
-	}
-}
+		/* 메모리 할당에 실패했을 경우 */
+		if (a == NULL)
+		{
+			puts("미로 ERROR");
+			return 0;
+		}
 
-
-//main
-
-#include <iostream>
-#include <fstream>
-using namespace std;
-void getdata(istream&, int&, int&);
-void Path(int, int);
-
-int main(int argc, char* argv[]) {
-
-	int m, p;
-	if (argc == 1)
-		cerr << "Usage" << argv[0] << "maze_data_file\n";
-	else {
-		ifstream is(argv[1]);
-		if (!is) {
-			cerr << argv[1] << "does ot exist\n";
+		/* 출구에 도달하면 정상 종료 */
+		else if (a->row == 7 && a->col == 14)
+		{
+			finalstep(maze, a);
 			return 1;
 		}
-		cout << "For maze datafile [" << argv[1] << "]\n";
-		getdata(is, m, p); is.close();
-		Path(m, p);
+
+		/* 동서남북에 길이 있는지 검사 */
+		else if ((d = dir_check(maze, a)) < 4)
+		{
+			int row = a->row, col = a->col;
+			footstep(maze, a);
+			if (d == 0)			// 북
+				row -= 1;
+			else if (d == 1)	// 동
+				col += 2;
+			else if (d == 2)	// 남
+				row += 1;
+			else if (d == 3)	// 서
+				col -= 2;
+			if ((a = push(way, &w, row, col)) == NULL)  // 신규 좌표 생성
+				return 0;
+		}
+
+		/* 갈 길이 더 이상 없을 경우 */
+		else
+		{
+			backstep(maze, a);
+			pop(way, &w);
+			a = way[w - 1];
+			// w는 항상 새로 쓸 위치에 가 있기 때문에 마지막 위치는 w-1
+		}
+		maze_print(maze);
 	}
+	return 1;
+}
+location* push(location* way[], int* w, int row, int col)
+{
+	if ((way[*w] = new_location(w)) == NULL)
+		return NULL;
+	way[*w]->row = row;
+	way[(*w)++]->col = col;
+
+	return way[(*w) - 1];
 }
 
 
+/* 위치 저장 공간 생성 */
+/* parameter : void */
+/* return : 정상 == 신규 공간 주소, 비정상 == NULL */
+location* new_location(int* w)
+{
+	/* max에 도달한 경우 NULL값 반환 */
+	if (*w == MAX)
+	{
+		puts("길을 찾지 못했습니다.");
+		return NULL;
+	}
+	location* temp;
+	if ((temp = (location*)malloc(sizeof(location))) == NULL)
+	{
+		puts("메모리가 부족합니다.");
+		exit(1);
+	}
+	/* 초기화 */
+	temp->row = 0;
+	temp->col = 0;
+
+	return temp;
+}
+
+void pop(location* way[], int* w)
+{
+	/* 신규 시작점까지 없어진 상황이라면 */
+	if (*w == 0)
+	{
+		puts("길이 이상합니다..");
+		exit(1);
+	}
+	/* w는 항상 새로 쓸 위치에 자리하고 있기 때문에, 마지막 값은 w - 1 */
+	free(way[*w - 1]);
+	way[(*w)-- - 1] = NULL;
+}
+int iswhat(char maze[][COL], int row, int col)
+{
+	if (maze[row][col] == -95 &&
+		maze[row][col + 1] == -32)
+		return 1;
+	return 0;
+}
+
+int dir_check(char maze[][COL], location* a)
+{
+	/* [북쪽확인] 위에 행이 있고 갈 수 있는 길일 때 '□' */
+	if (a->row > 0 && iswhat(maze, a->row - 1, a->col) == 1)
+		return 0;
+
+	/* [동쪽확인] 오른쪽에 열이 있고 갈 수 있는 길일 때 */
+	/* 2byte 문자구성이라, 좌우 이동은 2칸씩 이동해야함 */
+	else if (a->col + 2 < COL && iswhat(maze, a->row, a->col + 2) == 1)
+		return 1;
+
+	/* [남쪽확인] 아랫쪽에 행이 있고 갈 수 있는 길일 때 */
+	else if (a->row + 1 < ROW && iswhat(maze, a->row + 1, a->col) == 1)
+		return 2;
+
+	/* [서쪽확인] 아랫쪽에 행이 있고 갈 수 있는 길일 때 */
+	else if (a->col > 0 && iswhat(maze, a->row, a->col - 1) == 1)
+		return 3;
+	/* 그 외 */
+	return 4;
+}
+void footstep(char maze[][COL], location* a)
+{
+	maze[a->row][a->col] = -94;
+	maze[a->row][a->col + 1] = -63;
+}
 
 
+/* 돌아간 자리 표시 넣어주기 (▣) */
+/* parameter : 미로배열, 현재 위치 좌표 */
+/* return : void */
+void backstep(char maze[][COL], location* a)
+{
+	maze[a->row][a->col] = -94;
+	maze[a->row][a->col + 1] = -61;
+}
 
 
+/* 출구 자리 표시 넣어주기 (↘) */
+/* parameter : 미로배열, 현재 위치 좌표 */
+/* return : void */
+void finalstep(char maze[][COL], location* a)
+{
+	maze[a->row][a->col] = -94;
+	maze[a->row][a->col + 1] = -39;
+}
+
+void maze_print(char maze[][COL])
+{
+	printf("\n\n");
+	for (int i = 0; i < ROW; ++i)
+		printf("\t%s\n", &maze[i][0]);
+}
