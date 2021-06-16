@@ -3,7 +3,7 @@
 #include <iostream>
 
 #define MAX_SIZE 100
-#define MAZE_SIZE 17
+#define MAZE_SIZE 8
 #define CHARACTER 2
 #define GOAL 6
 #define WALL 1
@@ -18,37 +18,18 @@
 using std::cout;
 using std::endl;
 
-typedef struct Point
+typedef struct Point 
 {
 	int x;
 	int y;
 }Point;
 
-typedef struct Stack
+typedef struct Stack   
 {
 	Point data[MAX_SIZE];
 	int top;
 }Stack;
 
-int maze[MAZE_SIZE][MAZE_SIZE] = {
-{ 14,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,15},
-{ 13,1,1,1,1,1,1,1,0,1,1,1,1,0,0,0,13},
-{ 13,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,13},
-{ 13,1,0,1,0,1,1,1,1,1,1,1,1,1,1,0,13},
-{ 13,1,0,1,0,0,0,0,1,0,0,0,0,0,1,0,13},
-{ 13,1,0,1,0,1,1,0,1,1,0,1,1,1,1,0,13},
-{ 13,1,0,1,0,1,1,0,1,1,0,1,1,0,1,0,13},
-{ 13,1,0,1,0,1,1,0,1,1,0,1,1,0,1,0,13},
-{ 13,1,0,1,0,1,1,1,1,1,0,0,0,0,1,0,13},
-{ 13,1,0,1,0,1,1,0,1,1,1,1,0,0,1,0,13},
-{ 13,1,0,1,0,0,0,0,1,1,0,0,0,0,1,0,13},
-{ 13,1,0,1,0,1,1,0,1,1,0,1,0,0,1,0,13},
-{ 13,1,0,1,0,1,1,0,1,1,0,1,0,0,1,0,13},
-{ 13,1,0,1,0,1,1,0,1,1,0,1,0,1,1,1,13},
-{ 13,1,0,1,0,1,1,0,0,0,0,1,0,0,0,6,13},
-{ 13,2,0,1,0,0,1,0,1,1,1,1,1,1,1,1,13},
-{ 16,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,17}
-};
 void init(Stack* p)
 {
 	p->top = -1;
@@ -80,20 +61,20 @@ void push(Stack* p, Point data)
 
 Point pop(Stack* p)
 {
-	if(is_empty(p))
+	if (is_empty(p))
 	{
-		cout<<"스택이 비어있습니다"<<endl;
+		cout << "스택이 비어있습니다" << endl;
 		exit(1);
 	}
 
 	return p->data[(p->top)--];
 }
 
-void FindWay(Stack* s, int x, int y)
+void FindWay(Stack* s, int x, int y, int maze[][MAZE_SIZE])
 {
 	if (x < 0 || y < 0 || x > MAZE_SIZE || y > MAZE_SIZE)
 		return;
-	if (maze[x][y] != WALL && maze[x][y] != '.' && maze[x][y] != 'ㅤ')
+	if (maze[x][y] != WALL && maze[x][y] != '.' && maze[x][y] != WALL2 && maze[x][y] != WALL3 && maze[x][y] != WALL4 && maze[x][y] != WALL5 && maze[x][y] != WALL6 && maze[x][y] != WALL7)
 	{
 		Point tmp;
 		tmp.x = x;
@@ -107,8 +88,18 @@ int main()
 	int i, j, x, y;
 	init(&s);
 
-	// 시작점 탐색 
+	int maze[MAZE_SIZE][MAZE_SIZE] = {
+	{ 14,12,12,12,12,12,12,15},
+	{ 13,1,1,1,1,1,1,13},
+	{ 13,2,0,0,0,0,0,13},
+	{ 13,1,1,0,1,1,0,13},
+	{ 13,1,1,0,1,1,1,13},
+	{ 13,1,0,0,0,0,6,13},
+	{ 13,1,1,1,1,1,1,13},
+	{ 16,12,12,12,12,12,12,17}
+	};
 
+	// 시작점 탐색 
 	for (i = 0;i < MAZE_SIZE;i++)
 	{
 		for (j = 0;j < MAZE_SIZE;j++)
@@ -131,9 +122,9 @@ int main()
 			}
 			else if (maze[i][j] == WALL)
 			{
-				cout<<"■";
+				cout << "■";
 			}
-			else if(maze[i][j] == CHARACTER)
+			else if (maze[i][j] == CHARACTER)
 			{
 				cout << "★";
 			}
@@ -168,7 +159,7 @@ int main()
 		}
 		cout << endl;
 	}
-	cout<<"이동 경로"<<endl;
+	cout << "이동 경로" << endl;
 	cout << "시작 (" << m.x << "," << m.y << ")";
 
 	while (maze[m.x][m.y] != GOAL)
@@ -178,20 +169,20 @@ int main()
 		maze[x][y] = '.'; // 방문한 곳을 표시
 
 		// 이동 가능한 곳을 탐색
-		FindWay(&s, x + 1, y);
-		FindWay(&s, x - 1, y);
-		FindWay(&s, x, y + 1);
-		FindWay(&s, x, y - 1);
+		FindWay(&s, x + 1, y, maze);
+		FindWay(&s, x - 1, y, maze);
+		FindWay(&s, x, y + 1, maze);
+		FindWay(&s, x, y - 1, maze);
 
 		if (is_empty(&s))
 		{
-			cout<<"이동경로를 찾을 수 없습니다. 실패"<<endl;
+			cout << "이동경로를 찾을 수 없습니다. 실패" << endl;
 			return 0;
 		}
 		else
 		{
 			m = pop(&s); // 현재 좌표를 변경 
-			cout <<"(" <<m.x << "," << m.y<<")";
+			cout << "(" << m.x << "," << m.y << ")";
 		}
 	}
 	cout << "도착" << endl;
